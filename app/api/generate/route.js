@@ -71,6 +71,10 @@ The ENTIRE output should fit on ONE SHORT BOND PAPER (8.5 × 11 inches).
 If the lesson contains many topics: shorten explanations, reduce examples, keep only essential information.
 Never remove the practice activities. Never exceed one page.
 
+FORMATTING RULES:
+Do not use LaTeX or math notation (e.g., $\rightarrow$, \times, \cdot). This output is rendered as plain markdown, not math-typeset text.
+For sequences or arrows, use the plain arrow character → directly (e.g., Determiner → Quantity → Quality), never wrap it in dollar signs or backslash commands.
+
 CONTENT QUALITY:
 Information must be factually correct, curriculum appropriate, logically organized, concise, and easy to study.
 Definitions should focus on understanding instead of memorization.

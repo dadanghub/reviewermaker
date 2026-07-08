@@ -232,7 +232,7 @@
 }
 
 /* Reviewer title */
-.reviewH1 {
+.reviewContent .reviewH1 {
   font-size: 1.6rem;
   font-weight: 800;
   color: #1e3a8a;
@@ -242,7 +242,7 @@
 }
 
 /* Section headers: I. Quick Lesson, II. Quick Review, etc. */
-.reviewH2 {
+.reviewContent .reviewH2 {
   font-size: 1.2rem;
   font-weight: 700;
   color: #ffffff;
@@ -252,12 +252,12 @@
   border-radius: 6px;
 }
 
-.reviewH2:first-child {
+.reviewContent .reviewH2:first-child {
   margin-top: 0;
 }
 
 /* Topic / sub-section headers */
-.reviewH3 {
+.reviewContent .reviewH3 {
   font-size: 1.05rem;
   font-weight: 700;
   color: #0f766e;

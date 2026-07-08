@@ -7,6 +7,32 @@ import styles from './page.module.css';
 // Handles: #, ##, ### headers, bullet lists (- or *), numbered lists,
 // and inline **bold** / *italic*. Intentionally small and dependency-free.
 
+// The AI sometimes slips into LaTeX-style math notation (e.g. "$\rightarrow$")
+// instead of plain text. Convert the common cases to plain characters before
+// parsing, since this app has no math renderer.
+function sanitizeMarkdown(text) {
+  const replacements = [
+    [/\\rightarrow/g, '→'],
+    [/\\leftarrow/g, '←'],
+    [/\\Rightarrow/g, '⇒'],
+    [/\\times/g, '×'],
+    [/\\cdot/g, '·'],
+    [/\\le\b/g, '≤'],
+    [/\\ge\b/g, '≥'],
+    [/\\neq/g, '≠'],
+    [/\\pm/g, '±'],
+    [/\\infty/g, '∞'],
+    [/\\%/g, '%'],
+  ];
+  let result = text;
+  for (const [pattern, replacement] of replacements) {
+    result = result.replace(pattern, replacement);
+  }
+  // Strip any remaining $...$ math delimiters, keeping their contents.
+  result = result.replace(/\$([^$]+)\$/g, '$1');
+  return result;
+}
+
 function parseInline(text, keyPrefix) {
   const parts = [];
   const regex = /(\*\*(.+?)\*\*|\*(.+?)\*)/g;
@@ -32,7 +58,7 @@ function parseInline(text, keyPrefix) {
 }
 
 function parseMarkdownToBlocks(markdown) {
-  const lines = markdown.split('\n');
+  const lines = sanitizeMarkdown(markdown).split('\n');
   const blocks = [];
   let currentList = null;
 
@@ -241,7 +267,7 @@ export default function Home() {
 
   const handleDownload = () => {
     const element = document.createElement('a');
-    const file = new Blob([review], { type: 'text/plain' });
+    const file = new Blob([sanitizeMarkdown(review)], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
     element.download = 'review-sheet.txt';
     document.body.appendChild(element);
