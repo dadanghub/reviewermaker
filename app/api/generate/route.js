@@ -1,8 +1,28 @@
 export const runtime = 'nodejs';
 
+function getGradeGuidance(gradeLevel) {
+  const gradeNum = parseInt(String(gradeLevel).replace(/\D/g, ''), 10) || 4;
+
+  if (gradeNum <= 3) {
+    return {
+      vocabularyNote:
+        'Use very simple, everyday vocabulary and very short sentences (aim for under 10 words per sentence). Avoid technical or academic terms unless you explain them in a single simple phrase right away. Favor concrete, familiar examples (home, family, school, animals, food) over abstract ones.',
+      formatNote:
+        'Use only simple, beginner-friendly assessment formats: Identification, True or False, Matching Type, Fill in the Blank, and simple Multiple Choice. Avoid formats that require abstract reasoning, such as Cause and Effect, Compare and Contrast, or multi-step Classification.',
+    };
+  }
+
+  return {
+    vocabularyNote:
+      'Use simple vocabulary, short sentences, clear explanations, and age-appropriate examples. Avoid unnecessary academic language.',
+    formatNote:
+      'Possible formats: Multiple Choice, Identification, True or False, Matching Type, Fill in the Blank, Short Answer, Enumeration, Classification, Sequencing, Cause and Effect, Compare and Contrast, Odd One Out, Labeling, Complete the Table.',
+  };
+}
+
 export async function POST(request) {
   try {
-    const { topics } = await request.json();
+    const { topics, subject, gradeLevel } = await request.json();
 
     if (!topics || topics.trim().length === 0) {
       return new Response(
@@ -10,6 +30,10 @@ export async function POST(request) {
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    const safeSubject = subject && subject.trim().length > 0 ? subject.trim() : 'General';
+    const safeGradeLevel = gradeLevel && gradeLevel.trim().length > 0 ? gradeLevel.trim() : 'Grade 4';
+    const { vocabularyNote, formatNote } = getGradeGuidance(safeGradeLevel);
 
     const systemPrompt = `You are an expert curriculum developer, instructional designer, assessment writer, and experienced elementary school teacher.
 
@@ -20,11 +44,11 @@ The review sheet should teach the lesson briefly, reinforce the important ideas,
 Always prioritize educational quality, readability, and printability.
 
 TARGET AUDIENCE:
-• Grade 4–6 students
+• ${safeGradeLevel} students
 • Filipino learners
-• English language instruction
+• Subject: ${safeSubject}
 
-Use simple vocabulary, short sentences, clear explanations, and age-appropriate examples. Avoid unnecessary academic language.
+${vocabularyNote}
 
 OUTPUT STRUCTURE - Generate the reviewer in this exact order:
 
@@ -53,7 +77,7 @@ Create exactly FOUR activities.
 Each activity contains exactly FIVE questions.
 Every activity should use a different assessment format.
 
-Possible formats: Multiple Choice, Identification, True or False, Matching Type, Fill in the Blank, Short Answer, Enumeration, Classification, Sequencing, Cause and Effect, Compare and Contrast, Odd One Out, Labeling, Complete the Table.
+${formatNote}
 
 Questions should gradually increase in difficulty.
 Question 1 should be the easiest.

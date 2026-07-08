@@ -165,6 +165,8 @@ function ReviewSheetContent({ markdown }) {
 
 export default function Home() {
   const [topics, setTopics] = useState('');
+  const [subject, setSubject] = useState('');
+  const [gradeLevel, setGradeLevel] = useState('Grade 4');
   const [review, setReview] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -181,7 +183,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ topics }),
+        body: JSON.stringify({ topics, subject, gradeLevel }),
       });
 
       if (!response.ok) {
@@ -293,6 +295,40 @@ export default function Home() {
             <div className={styles.card}>
               <h2>Enter Lesson Topics</h2>
               <form onSubmit={handleGenerate}>
+                <div className={styles.formRow}>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="subject">Subject:</label>
+                    <input
+                      id="subject"
+                      type="text"
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      placeholder="e.g. English, Math, Science, Araling Panlipunan"
+                      className={styles.textInput}
+                      disabled={loading}
+                      required
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label htmlFor="gradeLevel">Grade Level:</label>
+                    <select
+                      id="gradeLevel"
+                      value={gradeLevel}
+                      onChange={(e) => setGradeLevel(e.target.value)}
+                      className={styles.select}
+                      disabled={loading}
+                    >
+                      <option value="Grade 1">Grade 1</option>
+                      <option value="Grade 2">Grade 2</option>
+                      <option value="Grade 3">Grade 3</option>
+                      <option value="Grade 4">Grade 4</option>
+                      <option value="Grade 5">Grade 5</option>
+                      <option value="Grade 6">Grade 6</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div className={styles.formGroup}>
                   <label htmlFor="topics">
                     Add your lesson topics (one per line):
