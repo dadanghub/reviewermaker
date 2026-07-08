@@ -79,37 +79,80 @@ Practice questions should assess understanding instead of rote memorization.`;
 
     const userMessage = `Generate a complete review sheet based on these lesson topics:\n\n${topics}\n\nReturn ONLY the review sheet content. Begin immediately with the title. Do not include any preamble, explanation, or markdown formatting indicators.`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-6',
-        max_tokens: 4000,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: userMessage,
-          },
-        ],
-      }),
-    });
+    // Fallback chain: try each model in order until one succeeds.
+    // gemini-2.0-* was retired by Google on 2026-06-01, so gemini-2.5-flash-lite
+    // is used as the final, cheapest/fastest fallback tier instead.
+    const MODEL_FALLBACK_CHAIN = [
+      'gemini-3.5-flash',
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite',
+    ];
 
-    if (!response.ok) {
-      const error = await response.json();
-      console.error('Claude API error:', error);
+    let reviewContent = null;
+    let lastError = null;
+
+    for (const model of MODEL_FALLBACK_CHAIN) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              system_instruction: {
+                parts: [{ text: systemPrompt }],
+              },
+              contents: [
+                {
+                  role: 'user',
+                  parts: [{ text: userMessage }],
+                },
+              ],
+              generationConfig: {
+                maxOutputTokens: 4000,
+              },
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          lastError = error;
+          console.error(`Gemini API error (${model}):`, JSON.stringify(error));
+          continue; // try the next model in the chain
+        }
+
+        const data = await response.json();
+        const candidate = data.candidates?.[0];
+        const text = candidate?.content?.parts?.map((p) => p.text || '').join('');
+
+        // Some responses can come back with no text (e.g. safety block, MAX_TOKENS
+        // with no content yet) - treat that as a failure and fall back too.
+        if (!text) {
+          lastError = { reason: 'empty_response', finishReason: candidate?.finishReason };
+          console.error(`Gemini API returned no text (${model}):`, JSON.stringify(lastError));
+          continue;
+        }
+
+        reviewContent = text;
+        console.log(`Review sheet generated successfully using ${model}`);
+        break; // success, stop the fallback chain
+      } catch (err) {
+        lastError = { message: err.message };
+        console.error(`Gemini API request threw (${model}):`, err.message);
+        continue;
+      }
+    }
+
+    if (!reviewContent) {
+      console.error('All Gemini models in the fallback chain failed:', JSON.stringify(lastError));
       return new Response(
         JSON.stringify({ error: 'Failed to generate review sheet' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
-
-    const data = await response.json();
-    const reviewContent = data.content[0].text;
 
     return new Response(
       JSON.stringify({ content: reviewContent }),
