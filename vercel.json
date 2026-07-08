@@ -1,9 +1,5 @@
 {
   "buildCommand": "next build",
   "outputDirectory": ".next",
-  "framework": "nextjs",
-  "nodeVersion": "18.x",
-  "env": [
-    "ANTHROPIC_API_KEY"
-  ]
+  "framework": "nextjs"
 }
