@@ -219,22 +219,87 @@
 }
 
 .reviewContent {
-  background: #fafbfc;
+  background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 1.5rem;
-  max-height: 600px;
+  padding: 1.75rem 2rem;
+  max-height: 700px;
   overflow-y: auto;
-  font-family: 'Courier New', monospace;
-  font-size: 0.85rem;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: #1f2937;
+}
+
+/* Reviewer title */
+.reviewH1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1e3a8a;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid #2563eb;
+}
+
+/* Section headers: I. Quick Lesson, II. Quick Review, etc. */
+.reviewH2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  margin: 1.75rem 0 1rem 0;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+}
+
+.reviewH2:first-child {
+  margin-top: 0;
+}
+
+/* Topic / sub-section headers */
+.reviewH3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f766e;
+  margin: 1.25rem 0 0.5rem 0;
+  padding-left: 0.6rem;
+  border-left: 4px solid #14b8a6;
+}
+
+.reviewParagraph {
+  margin: 0.5rem 0 0.9rem 0;
   color: #374151;
 }
 
-.reviewLine {
-  margin-bottom: 0.25rem;
+.reviewList,
+.reviewOrderedList {
+  margin: 0.4rem 0 1rem 0;
+  padding-left: 1.5rem;
+  color: #374151;
+}
+
+.reviewList li,
+.reviewOrderedList li {
+  margin-bottom: 0.4rem;
+  line-height: 1.55;
+}
+
+.reviewList {
+  list-style-type: disc;
+}
+
+.reviewOrderedList {
+  list-style-type: decimal;
+}
+
+.reviewContent strong {
+  color: #111827;
+  font-weight: 700;
+}
+
+.reviewContent em {
+  color: #4b5563;
+  font-style: italic;
 }
 
 .emptyState {

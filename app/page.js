@@ -1,13 +1,148 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import styles from './page.module.css';
+
+// --- Lightweight markdown parser for the AI-generated review sheet ---
+// Handles: #, ##, ### headers, bullet lists (- or *), numbered lists,
+// and inline **bold** / *italic*. Intentionally small and dependency-free.
+
+function parseInline(text, keyPrefix) {
+  const parts = [];
+  const regex = /(\*\*(.+?)\*\*|\*(.+?)\*)/g;
+  let lastIndex = 0;
+  let match;
+  let idx = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    if (match[2] !== undefined) {
+      parts.push(<strong key={`${keyPrefix}-b-${idx++}`}>{match[2]}</strong>);
+    } else if (match[3] !== undefined) {
+      parts.push(<em key={`${keyPrefix}-i-${idx++}`}>{match[3]}</em>);
+    }
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts.length ? parts : text;
+}
+
+function parseMarkdownToBlocks(markdown) {
+  const lines = markdown.split('\n');
+  const blocks = [];
+  let currentList = null;
+
+  const flushList = () => {
+    if (currentList) {
+      blocks.push(currentList);
+      currentList = null;
+    }
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+
+    if (line === '') {
+      flushList();
+      continue;
+    }
+    if (line.startsWith('### ')) {
+      flushList();
+      blocks.push({ type: 'h3', text: line.slice(4) });
+    } else if (line.startsWith('## ')) {
+      flushList();
+      blocks.push({ type: 'h2', text: line.slice(3) });
+    } else if (line.startsWith('# ')) {
+      flushList();
+      blocks.push({ type: 'h1', text: line.slice(2) });
+    } else if (/^[-*]\s+/.test(line)) {
+      const text = line.replace(/^[-*]\s+/, '');
+      if (!currentList || currentList.type !== 'ul') {
+        flushList();
+        currentList = { type: 'ul', items: [] };
+      }
+      currentList.items.push(text);
+    } else if (/^\d+[.)]\s+/.test(line)) {
+      const text = line.replace(/^\d+[.)]\s+/, '');
+      if (!currentList || currentList.type !== 'ol') {
+        flushList();
+        currentList = { type: 'ol', items: [] };
+      }
+      currentList.items.push(text);
+    } else {
+      flushList();
+      blocks.push({ type: 'p', text: line });
+    }
+  }
+  flushList();
+  return blocks;
+}
+
+function ReviewSheetContent({ markdown }) {
+  const blocks = parseMarkdownToBlocks(markdown);
+
+  return (
+    <>
+      {blocks.map((block, i) => {
+        const key = `block-${i}`;
+        switch (block.type) {
+          case 'h1':
+            return (
+              <h1 key={key} className={styles.reviewH1}>
+                {parseInline(block.text, key)}
+              </h1>
+            );
+          case 'h2':
+            return (
+              <h2 key={key} className={styles.reviewH2}>
+                {parseInline(block.text, key)}
+              </h2>
+            );
+          case 'h3':
+            return (
+              <h3 key={key} className={styles.reviewH3}>
+                {parseInline(block.text, key)}
+              </h3>
+            );
+          case 'ul':
+            return (
+              <ul key={key} className={styles.reviewList}>
+                {block.items.map((item, j) => (
+                  <li key={`${key}-${j}`}>{parseInline(item, `${key}-${j}`)}</li>
+                ))}
+              </ul>
+            );
+          case 'ol':
+            return (
+              <ol key={key} className={styles.reviewOrderedList}>
+                {block.items.map((item, j) => (
+                  <li key={`${key}-${j}`}>{parseInline(item, `${key}-${j}`)}</li>
+                ))}
+              </ol>
+            );
+          case 'p':
+          default:
+            return (
+              <p key={key} className={styles.reviewParagraph}>
+                {parseInline(block.text, key)}
+              </p>
+            );
+        }
+      })}
+    </>
+  );
+}
 
 export default function Home() {
   const [topics, setTopics] = useState('');
   const [review, setReview] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const reviewRef = useRef(null);
 
   const handleGenerate = async (e) => {
     e.preventDefault();
@@ -72,12 +207,18 @@ export default function Home() {
               font-size: 10pt;
               margin: 4px 0;
             }
-            ul {
+            ul, ol {
               margin: 6px 0;
               padding-left: 20px;
             }
             li {
               margin-bottom: 3px;
+            }
+            strong {
+              font-weight: 700;
+            }
+            em {
+              font-style: italic;
             }
             .section {
               page-break-inside: avoid;
@@ -91,7 +232,7 @@ export default function Home() {
             }
           </style>
         </head>
-        <body>${review.replace(/\n/g, '<br>')}</body>
+        <body>${reviewRef.current ? reviewRef.current.innerHTML : ''}</body>
       </html>
     `);
     printWindow.document.close();
@@ -193,12 +334,8 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
-                <div className={styles.reviewContent}>
-                  {review.split('\n').map((line, index) => (
-                    <div key={index} className={styles.reviewLine}>
-                      {line}
-                    </div>
-                  ))}
+                <div className={styles.reviewContent} ref={reviewRef}>
+                  <ReviewSheetContent markdown={review} />
                 </div>
               </div>
             ) : (
