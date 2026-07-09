@@ -350,6 +350,18 @@
   list-style-type: decimal;
 }
 
+.reviewOptionsList {
+  margin: 0.35rem 0 0.6rem 0;
+  padding-left: 1.5rem;
+  list-style-type: upper-alpha;
+  color: #374151;
+}
+
+.reviewOptionsList li {
+  margin-bottom: 0.25rem;
+  line-height: 1.5;
+}
+
 .reviewContent strong {
   color: #111827;
   font-weight: 700;

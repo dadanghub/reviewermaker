@@ -73,7 +73,11 @@ function parseMarkdownToBlocks(markdown) {
     const line = rawLine.trim();
 
     if (line === '') {
-      flushList();
+      // Blank lines separate paragraphs AND separate questions/answer-choice
+      // groups within the same activity. Don't flush lists here - flushing
+      // happens naturally on a real block-type change (heading, different
+      // list type, etc). This keeps a whole activity's questions in ONE
+      // <ol> so browser numbering stays 1, 2, 3... instead of resetting.
       continue;
     }
     if (line.startsWith('### ')) {
@@ -91,14 +95,26 @@ function parseMarkdownToBlocks(markdown) {
         flushList();
         currentList = { type: 'ul', items: [] };
       }
-      currentList.items.push(text);
+      currentList.items.push({ text, options: [] });
     } else if (/^\d+[.)]\s+/.test(line)) {
+      // Numbered item, e.g. a question. Starts/continues a single <ol>
+      // for the whole activity so the browser numbers items 1, 2, 3...
       const text = line.replace(/^\d+[.)]\s+/, '');
       if (!currentList || currentList.type !== 'ol') {
         flushList();
         currentList = { type: 'ol', items: [] };
       }
-      currentList.items.push(text);
+      currentList.items.push({ text, options: [] });
+    } else if (
+      /^[A-Za-z][.)]\s+/.test(line) &&
+      currentList &&
+      currentList.type === 'ol' &&
+      currentList.items.length > 0
+    ) {
+      // Lettered answer choice (A./B./C./D.) belonging to the question
+      // that was just added - nest it instead of breaking the list.
+      const text = line.replace(/^[A-Za-z][.)]\s+/, '');
+      currentList.items[currentList.items.length - 1].options.push(text);
     } else {
       flushList();
       blocks.push({ type: 'p', text: line });
@@ -138,7 +154,7 @@ function ReviewSheetContent({ markdown }) {
             return (
               <ul key={key} className={styles.reviewList}>
                 {block.items.map((item, j) => (
-                  <li key={`${key}-${j}`}>{parseInline(item, `${key}-${j}`)}</li>
+                  <li key={`${key}-${j}`}>{parseInline(item.text, `${key}-${j}`)}</li>
                 ))}
               </ul>
             );
@@ -146,7 +162,18 @@ function ReviewSheetContent({ markdown }) {
             return (
               <ol key={key} className={styles.reviewOrderedList}>
                 {block.items.map((item, j) => (
-                  <li key={`${key}-${j}`}>{parseInline(item, `${key}-${j}`)}</li>
+                  <li key={`${key}-${j}`}>
+                    {parseInline(item.text, `${key}-${j}`)}
+                    {item.options && item.options.length > 0 && (
+                      <ol type="A" className={styles.reviewOptionsList}>
+                        {item.options.map((opt, k) => (
+                          <li key={`${key}-${j}-opt-${k}`}>
+                            {parseInline(opt, `${key}-${j}-opt-${k}`)}
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </li>
                 ))}
               </ol>
             );
